@@ -1,8 +1,9 @@
 import pandas as pd
+import pickle
 
 from collections import defaultdict
 
-def build_streaks(df: pd.DataFrame):
+def build_streaks(df: pd.DataFrame, **kwargs):
     def seasons_streak(df: pd.DataFrame, season: int):
         s_df = df[df['Season'] == season].copy()
         s_df.sort_values(by='Round', ascending=True)
@@ -44,4 +45,16 @@ def build_streaks(df: pd.DataFrame):
     df['Away_Win_Streak'] = df.apply(lambda x: streaks[x['Link']]['wins']['away_streak'], axis=1)
     df['Home_Score_Streak'] = df.apply(lambda x: streaks[x['Link']]['scores']['home_streak'], axis=1)
     df['Away_Score_Streak'] = df.apply(lambda x: streaks[x['Link']]['scores']['away_streak'], axis=1)
+    return df
+
+def build_elo(df: pd.DataFrame, **kwargs):
+    elo_path = kwargs.get('elo_path')
+    if elo_path is None:
+        return df
+    
+    with open(elo_path, 'rb') as f:
+        elo_info = pickle.load(f)
+        
+    df['Home_Elo'] = df.apply(lambda x: elo_info[x['Link']]['Elo_home'], axis=1).fillna(0)
+    df['Away_Elo'] = df.apply(lambda x: elo_info[x['Link']]['Elo_away'], axis=1).fillna(0)
     return df
