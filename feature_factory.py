@@ -1,7 +1,26 @@
 import pandas as pd
 import pickle
+import json
 
 from collections import defaultdict
+from sklearn.preprocessing import LabelEncoder
+
+def build_encoded_teams(df: pd.DataFrame, **kwargs):
+    encoding_path = kwargs.get('encoding_path')
+    if encoding_path is not None:
+        with open(encoding_path, 'rb') as f:
+            mapping = json.load(f)
+    else:
+        encoder = LabelEncoder()
+        teams = list(set(df['Home_Team'].unique().tolist() + df['Away_Team'].unique().tolist()))
+        encoder.fit(teams)
+        mapping = { cl: int(encoder.transform([cl])[0]) for cl in encoder.classes_ }
+        with open('teams_encoding.json', 'w') as outfile:
+            json.dump(mapping, outfile)
+    
+    df['Home_Team'] = df['Home_Team'].astype(str).apply(lambda x: mapping[x])
+    df['Away_Team'] = df['Away_Team'].astype(str).apply(lambda x: mapping[x])
+    return df
 
 def build_streaks(df: pd.DataFrame, **kwargs):
     def seasons_streak(df: pd.DataFrame, season: int):
